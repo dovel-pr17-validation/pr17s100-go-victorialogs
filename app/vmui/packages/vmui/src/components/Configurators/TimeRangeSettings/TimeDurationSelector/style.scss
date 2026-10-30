@@ -1,0 +1,12 @@
+@use "src/styles/variables" as *;
+
+.vm-time-duration {
+  max-height: 227px;
+  overflow: auto;
+  font-size: $font-size;
+  padding-top: 0;
+
+  &_mobile {
+    max-height: 100%
+  }
+}

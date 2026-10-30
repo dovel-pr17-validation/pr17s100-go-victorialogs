@@ -1,0 +1,72 @@
+@use "src/styles/variables" as *;
+
+.vm-chart-tooltip {
+  position: absolute;
+  display: grid;
+  gap: $padding-global;
+  width: auto;
+  max-width: clamp(360px, 42vw, 640px);
+  padding: $padding-global;
+  border-radius: $border-radius-medium;
+  background: $color-background-tooltip;
+  font-family: $font-family-monospace;
+  font-size: $font-size-small;
+  font-weight: normal;
+  line-height: 150%;
+  color: $color-white;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  z-index: 98;
+
+  &-data {
+    display: grid;
+    gap: calc($padding-small / 2);
+
+    &-item {
+      display: grid;
+      grid-template-columns: 14px 1fr auto;
+      align-items: flex-start;
+      gap: $padding-small;
+      max-width: 100%;
+
+      &__marker {
+        aspect-ratio: 1;
+        border: 1px solid rgba($color-white, 0.4);
+      }
+
+      &__label {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      &__value {
+        grid-column: 3;
+      }
+
+      &_total {
+        padding-top: calc($padding-small / 2);
+        border-top: 1px dashed rgba($color-white, 0.4);
+      }
+
+      &_total &__label {
+        grid-column: span 2;
+      }
+
+      &_total &__value {
+        font-weight: 600;
+      }
+    }
+  }
+
+  &-timestamp {
+    white-space: pre-wrap;
+  }
+
+  &-tips {
+    font-size: $font-size-small;
+    font-style: italic;
+    opacity: 0.8;
+  }
+}
+

@@ -1,0 +1,143 @@
+@use "sass:map";
+@use "src/styles/variables" as *;
+
+$checkbox-sizes: (
+  small: (
+    size: 12px,
+    padding: 2px,
+    radius: $border-radius-small,
+    gap: $padding-small
+  ),
+  medium: (
+    size: 14px,
+    padding: 2px,
+    radius: $border-radius-small,
+    gap: $padding-small
+  ),
+  large: (
+    size: 16px,
+    padding: 3px,
+    radius: $border-radius-small,
+    gap: $padding-small
+  )
+);
+
+@mixin checkbox-size($name) {
+  $cfg: map.get($checkbox-sizes, $name);
+
+  $size: map.get($cfg, size);
+  $pad: map.get($cfg, padding);
+  $radius: map.get($cfg, radius);
+  $gap: map.get($cfg, gap);
+
+  $thumb: $size - ($pad * 2);
+
+  .vm-checkbox-track {
+    width: $size;
+    height: $size;
+    padding: $pad;
+    border-radius: $radius;
+
+    &__thumb {
+      width: $thumb;
+      height: $thumb;
+
+      svg {
+        width: $thumb;
+      }
+    }
+  }
+
+  .vm-checkbox__label {
+    margin-left: $gap;
+  }
+}
+
+.vm-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  cursor: pointer;
+  user-select: none;
+
+  &_small {
+    @include checkbox-size(small);
+  }
+
+  &_medium {
+    @include checkbox-size(medium);
+  }
+
+  &_large {
+    @include checkbox-size(large);
+  }
+
+  &_disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  &_secondary_active &-track {
+    background-color: $color-secondary;
+  }
+
+  &_secondary &-track {
+    border: 1px solid $color-secondary;
+  }
+
+  &_primary_active &-track {
+    background-color: $color-primary;
+  }
+
+  &_primary &-track {
+    border: 1px solid $color-primary;
+  }
+
+  &_gray_active &-track {
+    border-color: transparent!important;
+    background-color: $border-divider-color;
+  }
+
+  &_gray &-track {
+    border: 1px solid $border-divider-color;
+  }
+
+  &_inherit &-track {
+    background-color: currentColor;
+  }
+
+  &_active &-track {
+    &__thumb {
+      transform: scale(1);
+    }
+  }
+
+  &:hover &-track {
+    opacity: 0.8;
+  }
+
+  &-track {
+    position: relative;
+    background-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 200ms ease, opacity 300ms ease-out;
+
+    &__thumb {
+      display: grid;
+      align-items: center;
+      justify-content: center;
+      color: $color-white;
+      transform: scale(0);
+      transition: transform 100ms ease-in-out;
+    }
+  }
+
+  &__label {
+    white-space: nowrap;
+    font-size: inherit;
+    color: inherit;
+    transition: color 200ms ease;
+  }
+}

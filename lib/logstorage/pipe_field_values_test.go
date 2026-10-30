@@ -1,0 +1,182 @@
+package logstorage
+
+import (
+	"testing"
+)
+
+func TestParsePipeFieldValuesSuccess(t *testing.T) {
+	f := func(pipeStr string) {
+		t.Helper()
+		expectParsePipeSuccess(t, pipeStr)
+	}
+
+	f(`field_values x`)
+	f(`field_values x filter abc`)
+	f(`field_values x limit 10`)
+	f(`field_values x filter abc limit 10`)
+}
+
+func TestParsePipeFieldValuesFailure(t *testing.T) {
+	f := func(pipeStr string) {
+		t.Helper()
+		expectParsePipeFailure(t, pipeStr)
+	}
+
+	f(`field_values`)
+	f(`field_values *`)
+	f(`field_values x*`)
+	f(`field_values a b`)
+	f(`field_values a limit`)
+	f(`field_values limit N`)
+	f(`field_values a filter`)
+}
+
+func TestPipeFieldValues(t *testing.T) {
+	f := func(pipeStr string, rows, rowsExpected [][]Field) {
+		t.Helper()
+		expectPipeResults(t, pipeStr, rows, rowsExpected)
+	}
+
+	f("field_values a", [][]Field{
+		{
+			{"a", `2`},
+			{"b", `3`},
+		},
+		{
+			{"a", "2"},
+			{"b", "3"},
+		},
+		{
+			{"a", `2`},
+			{"b", `54`},
+			{"c", "d"},
+		},
+	}, [][]Field{
+		{
+			{"a", "2"},
+			{"hits", "3"},
+		},
+	})
+
+	f("field_values (b)", [][]Field{
+		{
+			{"a", `2`},
+			{"b", `3`},
+		},
+		{
+			{"a", "2"},
+			{"b", "3"},
+		},
+		{
+			{"a", `2`},
+			{"b", `54`},
+			{"c", "d"},
+		},
+	}, [][]Field{
+		{
+			{"b", "3"},
+			{"hits", "2"},
+		},
+		{
+			{"b", "54"},
+			{"hits", "1"},
+		},
+	})
+
+	f("field_values b filter 4", [][]Field{
+		{
+			{"a", `2`},
+			{"b", `3`},
+		},
+		{
+			{"a", `2`},
+			{"b", `-233`},
+		},
+		{
+			{"a", "2"},
+			{"b", "a4bc"},
+		},
+		{
+			{"a", `2`},
+			{"b", `54`},
+			{"c", "d"},
+		},
+	}, [][]Field{
+		{
+			{"b", "54"},
+			{"hits", "1"},
+		},
+		{
+			{"b", "a4bc"},
+			{"hits", "1"},
+		},
+	})
+
+	f("field_values c", [][]Field{
+		{
+			{"a", `2`},
+			{"b", `3`},
+		},
+		{
+			{"a", "2"},
+			{"b", "3"},
+		},
+		{
+			{"a", `2`},
+			{"b", `54`},
+			{"c", "d"},
+		},
+	}, [][]Field{
+		{
+			{"c", ""},
+			{"hits", "2"},
+		},
+		{
+			{"c", "d"},
+			{"hits", "1"},
+		},
+	})
+
+	f("field_values d", [][]Field{
+		{
+			{"a", `2`},
+			{"b", `3`},
+		},
+		{
+			{"a", "2"},
+			{"b", "3"},
+		},
+		{
+			{"a", `2`},
+			{"b", `54`},
+			{"c", "d"},
+		},
+	}, [][]Field{
+		{
+			{"d", ""},
+			{"hits", "3"},
+		},
+	})
+}
+
+func TestPipeFieldValuesUpdateNeededFields(t *testing.T) {
+	f := func(s, allowFilters, denyFilters, allowFiltersExpected, denyFiltersExpected string) {
+		t.Helper()
+		expectPipeNeededFields(t, s, allowFilters, denyFilters, allowFiltersExpected, denyFiltersExpected)
+	}
+
+	// all the needed fields
+	f("field_values x", "*", "", "x", "")
+
+	// all the needed fields, unneeded fields do not intersect with src
+	f("field_values x", "*", "f1,f2", "x", "")
+
+	// all the needed fields, unneeded fields intersect with src
+	f("field_values x", "*", "f1,x", "x", "")
+
+	// needed fields do not intersect with src
+	f("field_values x", "f1,f2", "", "x", "")
+
+	// needed fields intersect with src
+	f("field_values x", "f1,x", "", "x", "")
+}

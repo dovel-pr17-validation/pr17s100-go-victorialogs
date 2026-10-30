@@ -1,0 +1,113 @@
+import { useState, useCallback, useEffect, useRef } from "preact/compat";
+import { useAppState } from "../../../state/common/StateContext";
+import { LogsFieldValues } from "../../../api/types";
+import {
+  useOverviewDispatch,
+  useOverviewState
+} from "../../../state/overview/OverviewStateContext";
+import { useTenant } from "../../../hooks/useTenant";
+import { TimeParams } from "../../../types";
+
+interface FetchOptions {
+  period: TimeParams;
+  query?: string;
+  extraParams?: URLSearchParams;
+}
+
+export const useFetchStreamFieldNames = () => {
+  const { serverUrl } = useAppState();
+  const {
+    streamsFieldNames: streamsFieldNamesState,
+    streamsFieldNamesParamsKey
+  } = useOverviewState();
+  const dispatch = useOverviewDispatch();
+  const tenant = useTenant();
+
+  const cacheRef = useRef({
+    state: streamsFieldNamesState,
+    key: streamsFieldNamesParamsKey,
+  });
+
+  cacheRef.current = {
+    state: streamsFieldNamesState,
+    key: streamsFieldNamesParamsKey,
+  };
+
+  const abortRef = useRef<AbortController | null>(null);
+
+  const [streamFieldNames, setStreamFieldNames] = useState<LogsFieldValues[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | string>("");
+
+  const fetchStreamFieldNames = useCallback(async (options: FetchOptions): Promise<void> => {
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    const { signal } = abortRef.current;
+
+    setLoading(true);
+    setError("");
+
+    const query = options.query || "*";
+
+    try {
+      const params = new URLSearchParams({
+        start: options.period.start.toString(),
+        end: options.period.end.toString(),
+        ignore_pipes: "1",
+        query,
+      });
+      options.extraParams?.forEach((v, k) => params.append(k, v));
+
+      const tenantKey = `tenant=${tenant.AccountID}:${tenant.ProjectID}`;
+      const cacheKey = `${serverUrl}|${params.toString()}|${tenantKey}`;
+
+      if (cacheRef.current.key === cacheKey) {
+        setStreamFieldNames(cacheRef.current.state);
+        return;
+      }
+
+      const url = `${serverUrl}/select/logsql/stream_field_names`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { ...tenant },
+        body: params,
+        signal
+      });
+
+      if (!response.ok) {
+        const errorResponse = await response.text();
+        const e = `${response.status} ${response.statusText}: ${errorResponse}`;
+        setStreamFieldNames([]);
+        console.error(e);
+        setError(e);
+        return;
+      }
+
+      const data: { values: LogsFieldValues[] } = await response.json();
+      setStreamFieldNames(data.values);
+      dispatch({
+        type: "SET_STREAM_FIELD_NAMES",
+        payload: { rows: data.values, key: cacheKey }
+      });
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      console.error(err);
+      setError(err as Error);
+      setStreamFieldNames([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [serverUrl, tenant, dispatch]);
+
+  useEffect(() => {
+    return () => abortRef.current?.abort();
+  }, []);
+
+  return {
+    streamFieldNames,
+    loading,
+    error,
+    fetchStreamFieldNames,
+    abort: useCallback(() => abortRef.current?.abort(), [])
+  };
+};

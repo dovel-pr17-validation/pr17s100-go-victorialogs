@@ -1,0 +1,113 @@
+import { useCallback, useRef, useState } from "preact/compat";
+import { ErrorTypes, TimeParams, TimePeriod } from "../../../types";
+import { useTenant } from "../../../hooks/useTenant";
+import { useAppState } from "../../../state/common/StateContext";
+import {
+  isValidDate,
+  timePeriodToTimeParams, vmDate
+} from "../../../utils/time";
+import { getOverrideValue } from "../../../components/Configurators/GlobalSettings/QueryTimeOverride/QueryTimeOverride";
+
+export interface ResponseTimeRange {
+  /** ISO 8601 string with up to nanosecond precision */
+  start: string;
+  /** ISO 8601 string with up to nanosecond precision */
+  end: string;
+  hasTimeFilter: boolean;
+}
+
+interface ServerTimeParams extends TimeParams {
+  hasTimeFilter: boolean;
+}
+
+const hasTimeFilter = (expr?: string) => {
+  return !!expr && expr.includes("_time");
+};
+
+export const useFetchQueryTime = (defaultQuery?: string) => {
+  const { serverUrl } = useAppState();
+  const tenant = useTenant();
+
+  const [serverPeriod, setServerPeriod] = useState<ServerTimeParams | null>(null);
+  const [isLoading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<ErrorTypes | string>();
+
+  const abortControllerRef = useRef(new AbortController());
+
+  const fetchQueryTime = useCallback(async ({ period, query }: {
+    period: TimeParams,
+    query?: string
+  }): Promise<ServerTimeParams | undefined> => {
+    abortControllerRef.current?.abort();
+
+    if (!getOverrideValue() || !hasTimeFilter(query)) {
+      // No need to fetch, as time filter override is disabled or query has no _time filter
+      return;
+    }
+
+    abortControllerRef.current = new AbortController();
+    const { signal } = abortControllerRef.current;
+
+    const params = new URLSearchParams({
+      query: query || defaultQuery || "",
+      start: period.start.toString(),
+      end: period.end.toString(),
+    });
+
+    setServerPeriod(null);
+    setLoading(true);
+    setError("");
+
+    try {
+      const url = `${serverUrl}/select/logsql/query_time_range`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { ...tenant },
+        body: params,
+        signal,
+      });
+
+      if (!response.ok || !response.body) {
+        const text = await response.text();
+        setError(text);
+        setLoading(false);
+        return;
+      }
+
+      const { start, end, hasTimeFilter }: ResponseTimeRange = await response.json();
+
+      if (!isValidDate(start) || !isValidDate(end)) {
+        const text = "Invalid date range";
+        setError(text);
+        setLoading(false);
+        return;
+      }
+
+      const timePeriod: TimePeriod = {
+        from: vmDate(start).nano().toISOString(),
+        to: vmDate(end).nano().toISOString()
+      };
+
+      const timeParams: TimeParams = timePeriodToTimeParams(timePeriod);
+      const serverPeriod = { ...timeParams, hasTimeFilter };
+      setServerPeriod(serverPeriod);
+      return serverPeriod;
+    } catch (e) {
+      if (e instanceof Error && e.name !== "AbortError") {
+        setError(String(e));
+        console.error(e);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [defaultQuery, serverUrl, tenant]);
+
+
+  return {
+    fetchQueryTime,
+    serverPeriod,
+    isLoading,
+    error,
+    abort: useCallback(() => abortControllerRef.current?.abort(), [])
+  };
+};

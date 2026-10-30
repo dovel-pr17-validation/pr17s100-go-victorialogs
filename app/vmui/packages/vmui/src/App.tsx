@@ -1,0 +1,59 @@
+import { FC, useState } from "preact/compat";
+import { HashRouter, Route, Routes } from "react-router-dom";
+import AppContextProvider from "./contexts/AppContextProvider";
+import ThemeProvider from "./components/Main/ThemeProvider/ThemeProvider";
+import QueryPage from "./pages/QueryPage/QueryPage";
+import LogsLayout from "./layouts/LogsLayout/LogsLayout";
+import OverviewPage from "./pages/OverviewPage/OverviewPage";
+import router from "./router";
+import "./constants/markedPlugins";
+import PreviewIcons from "./components/Main/Icons/PreviewIcons";
+import AllButtonsPreview from "./components/Main/Button/AllButtonsPreview";
+
+const isDev = import.meta.env.DEV;
+
+const App: FC = () => {
+  const [loadedTheme, setLoadedTheme] = useState(false);
+
+  return <>
+    <HashRouter>
+      <AppContextProvider>
+        <>
+          <ThemeProvider onLoaded={setLoadedTheme}/>
+          {loadedTheme && (
+            <Routes>
+              <Route
+                path={"/"}
+                element={<LogsLayout/>}
+              >
+                <Route
+                  path={"/"}
+                  element={<QueryPage/>}
+                />
+                <Route
+                  path={router.overview}
+                  element={<OverviewPage/>}
+                />
+
+                {isDev && (
+                  <>
+                    <Route
+                      path="/icons"
+                      element={<PreviewIcons />}
+                    />
+                    <Route
+                      path="/buttons"
+                      element={<AllButtonsPreview />}
+                    />
+                  </>
+                )}
+              </Route>
+            </Routes>
+          )}
+        </>
+      </AppContextProvider>
+    </HashRouter>
+  </>;
+};
+
+export default App;

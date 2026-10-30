@@ -1,0 +1,57 @@
+@use "src/styles/variables" as *;
+
+.vm-select-limits-button {
+  display: grid;
+  grid-template-columns: auto 18px;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-small;
+  color: $color-text-secondary;
+  padding: 2px 4px 2px 8px;
+  border: $border-divider;
+  border-radius: $border-radius-small;
+  cursor: pointer;
+
+  &:hover {
+    background-color: $color-hover-black;
+  }
+}
+
+.vm-select-limits {
+  display: grid;
+
+  &-list {
+    max-height: 300px;
+    overflow: auto;
+  }
+
+  &__item {
+    max-width: 300px;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    text-wrap: balance;
+  }
+
+  &__error {
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    align-items: center;
+    justify-content: center;
+    gap: $padding-small;
+    font-size: $font-size-small;
+    color: $color-error;
+    padding: $padding-small;
+  }
+
+  &__empty {
+    font-size: $font-size-small;
+    color: $color-text-secondary;
+    padding: $padding-small $padding-global;
+  }
+
+  &__search {
+    position: sticky;
+    top: 0;
+    padding-inline: $padding-global;
+  }
+}

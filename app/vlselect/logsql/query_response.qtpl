@@ -1,0 +1,33 @@
+{% import (
+	"github.com/VictoriaMetrics/VictoriaLogs/lib/logstorage"
+) %}
+
+{% stripspace %}
+
+// JSONRows prints formatted rows
+{% func JSONRows(rows [][]logstorage.Field) %}
+	{% if len(rows) == 0 %}
+		{% return %}
+	{% endif %}
+	{% for _, fields := range rows %}
+		{% code fields = logstorage.SkipLeadingFieldsWithoutValues(fields) %}
+		{% if len(fields) == 0 %}
+			{% continue %}
+		{% endif %}
+		{
+			{% code
+				f := fields[0]
+				fields = fields[1:]
+			%}
+			{%q= f.Name %}:{%q= f.Value %}
+			{% for _, f := range fields %}
+				{% if f.Value == "" %}
+					{% continue %}
+				{% endif %}
+				,{%q= f.Name %}:{%q= f.Value %}
+			{% endfor %}
+		}{% newline %}
+	{% endfor %}
+{% endfunc %}
+
+{% endstripspace %}

@@ -1,0 +1,15 @@
+@use "src/styles/variables" as *;
+
+.vm-table-view {
+  &-settings {
+    &__button {
+      margin-right: $padding-small;
+    }
+  }
+
+  &-settings,
+  &__settings-buttons {
+    display: flex;
+    align-items: center;
+  }
+}

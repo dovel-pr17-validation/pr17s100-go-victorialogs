@@ -1,0 +1,45 @@
+@use "src/styles/variables" as *;
+
+.vm-query-editor {
+  position: relative;
+
+  .marker-detection {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: -9999;
+    visibility: hidden;
+  }
+
+  &-help-tooltip {
+    &-item {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      padding: 4px 0;
+      border-bottom: $border-divider;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      span:last-child {
+        text-align: right;
+      }
+    }
+  }
+}
+
+.vm-autocomplete-status {
+  position: relative;
+  display: inline-block;
+
+  &__placeholder {
+    visibility: hidden;
+  }
+
+  &__value {
+    position: absolute;
+    inset: 0;
+  }
+}
